@@ -27,8 +27,10 @@ void printQRCodeASCII(const std::string& text) {
     
     printf("\n");
     for (int y = 0; y < size; y++) {
+        // Borda esquerda
+        printf("  ");
         for (int x = 0; x < size; x++) {
-            printf("%s", qr.getModule(x, y) ? "██" : "  ");
+            printf("%s", qr.getModule(x, y) ? "##" : "  ");
         }
         printf("\n");
     }
