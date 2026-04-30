@@ -1,0 +1,22 @@
+# Build outputs
+*.elf
+*.nro
+*.nso
+*.nacp
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+*.temp
