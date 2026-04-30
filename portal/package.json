@@ -1,0 +1,31 @@
+{
+  "name": "portal",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@prisma/config": "^7.8.0",
+    "@react-oauth/google": "^0.13.5",
+    "next": "^15.3.0",
+    "pg": "^8.14.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.3.0",
+    "prisma": "^7.8.0",
+    "typescript": "^6.0.3"
+  }
+}

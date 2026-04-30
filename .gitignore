@@ -1,23 +1,16 @@
-# Build outputs
-*.elf
-*.nro
-*.nso
-*.nacp
+# Dependências
+node_modules/
+.next/
+dist/
 build/
-push-to-develop.sh
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# macOS
+# Ambiente e Segredos
+.env
+.env.local
+.env.production
 .DS_Store
-.AppleDouble
-.LSOverride
 
-# Temporary files
-*.tmp
-*.temp
+# Switch App (arquivos temporários)
+switch-app/AppSwitch.elf
+switch-app/AppSwitch.nro
+switch-app/build/
