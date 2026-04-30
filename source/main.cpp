@@ -8,6 +8,11 @@
 using json = nlohmann::json;
 using namespace qrcodegen;
 
+// Configuração do Portal (Altere para seu IP local ou domínio de produção)
+const std::string BASE_URL = "http://192.168.0.15:3000";
+const std::string APP_VERSION = "1.0.1";
+const std::string APP_PATH = "/switch/AppSwitch.nro";
+
 // Função callback para receber dados do HTTP
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
@@ -42,7 +47,8 @@ std::string createSession(const std::string& deviceToken) {
     std::string response;
     
     if(curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:3000/api/session/init");
+        std::string url = BASE_URL + "/api/session/init";
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         
         // JSON body
@@ -75,7 +81,8 @@ std::string checkAppVersion() {
     std::string response;
     
     if(curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:3000/api/app/version");
+        std::string url = BASE_URL + "/api/app/version";
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
@@ -119,7 +126,7 @@ std::string checkSessionStatus(const std::string& deviceToken) {
     std::string response;
     
     if(curl) {
-        std::string url = "http://localhost:3000/api/session/status?deviceToken=" + deviceToken;
+        std::string url = BASE_URL + "/api/session/status?deviceToken=" + deviceToken;
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -136,8 +143,7 @@ std::string checkSessionStatus(const std::string& deviceToken) {
     return response;
 }
 
-const std::string APP_VERSION = "0.5.0";
-const std::string APP_PATH = "/switch/AppSwitch.nro";
+// (Versão e caminhos movidos para o topo)
 
 int main(int argc, char **argv) {
     consoleInit(NULL);
@@ -272,7 +278,7 @@ int main(int argc, char **argv) {
             authUrl = jsonData["authUrl"];
         }
     } catch (...) {
-        authUrl = "http://localhost:3000/auth?sessionId=error";
+        authUrl = BASE_URL + "/auth?sessionId=error";
     }
 
     printf("--------------------\n");
