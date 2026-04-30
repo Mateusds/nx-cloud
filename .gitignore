@@ -1,23 +1,27 @@
-# Build outputs
+# Node / Next.js
+node_modules/
+.next/
+dist/
+.env*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Switch App Build Outputs
 *.elf
 *.nro
 *.nso
 *.nacp
-build/
-push-to-develop.sh
+switch-app/build/
+switch-app/AppSwitch.elf
+switch-app/AppSwitch.nro
 
-# IDE
+# IDEs e Sistema
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-
-# macOS
 .DS_Store
-.AppleDouble
-.LSOverride
-
-# Temporary files
+*.swp
 *.tmp
-*.temp
+
+# Dev scripts
+push-to-develop.sh
