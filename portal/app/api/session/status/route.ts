@@ -18,12 +18,14 @@ export async function GET(request: Request) {
         where: { deviceToken },
         include: { user: true },
       });
-    } else {
-      session = await prisma.session.findUnique({
-        where: { id: sessionId },
-        include: { user: true },
-      });
+    if (!sessionId) {
+      return Response.json({ error: 'Session ID is required' }, { status: 400 });
     }
+    
+    session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: { user: true },
+    });
 
     if (!session) {
       return Response.json({ error: 'Sessão não encontrada' }, { status: 404 });
