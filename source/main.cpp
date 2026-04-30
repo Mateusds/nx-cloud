@@ -1,12 +1,13 @@
 #include <switch.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include <curl/curl.h>
-#include <nlohmann/json.hpp>
-#include "qrcodegen.hpp"
+#include "../include/nlohmann/json.hpp"
+#include "../include/qrcodegen.hpp"
 
 using json = nlohmann::json;
-using namespace qrcodegen;
+// Removido 'using namespace qrcodegen' para evitar conflitos no IDE
 
 // Configuração do Portal (Altere para seu IP local ou domínio de produção)
 const std::string BASE_URL = "http://192.168.0.15:3000";
@@ -21,7 +22,7 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
 
 // Gera QR code em ASCII
 void printQRCodeASCII(const std::string& text) {
-    QrCode qr = QrCode::encodeText(text.c_str(), QrCode::Ecc::LOW);
+    qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText(text.c_str(), qrcodegen::QrCode::Ecc::LOW);
     int size = qr.getSize();
     
     printf("\n");
@@ -38,7 +39,7 @@ void printQRCodeASCII(const std::string& text) {
 std::string getDeviceToken() {
     // Em produção, usar serial do console ou UUID único
     // Por enquanto, usa um valor fixo para teste
-    return "switch-device-001";
+    return std::string("switch-device-001");
 }
 
 // Cria sessão no backend
