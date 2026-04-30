@@ -4,6 +4,7 @@
 *.nso
 *.nacp
 build/
+push-to-develop.sh
 
 # IDE
 .vscode/
