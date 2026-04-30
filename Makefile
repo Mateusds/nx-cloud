@@ -17,6 +17,12 @@ SOURCE := source
 INCLUDE := include
 BUILD  := build
 
+# Configurações do Aplicativo (Aparecem no Homebrew Menu)
+APP_TITLE   := NX-Cloud
+APP_AUTHOR  := Mateusds
+APP_VERSION := 1.0.1
+ICON        := icon.jpg
+
 # Flags de Compilação
 ARCH    := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CXXFLAGS := -g -Wall -O2 -ffunction-sections $(ARCH) -I$(CURDIR)/$(INCLUDE) -I$(DEVKITPRO)/libnx/include -I$(DEVKITPRO)/portlibs/switch/include
@@ -28,6 +34,8 @@ LIBS := -lcurl -lz -lnx
 all: $(TARGET).nro
 
 $(TARGET).nro: $(TARGET).elf
+	@# Gera o NRO com ícone e metadados
+	$(DEVKITPRO)/tools/bin/elf2nro $< $@ --icon=$(ICON) --app-title="$(APP_TITLE)" --app-author="$(APP_AUTHOR)" --app-version="$(APP_VERSION)"
 
 $(TARGET).elf: $(SOURCE)/main.cpp $(SOURCE)/qrcodegen.cpp
 	@mkdir -p $(BUILD)
