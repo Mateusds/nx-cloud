@@ -17,9 +17,12 @@ jobs:
 
     - name: Install dependencies
       run: |
+        # Atualiza as bases de dados primeiro
         dkp-pacman -Syu --noconfirm
-        # Adicione aqui outras libs que seu projeto usa (ex: switch-curl, switch-libjson-c)
-        dkp-pacman -S --noconfirm switch-libnx switch-curl switch-mesa switch-glm
+        
+        # Instala o grupo de desenvolvimento do Switch e bibliotecas específicas
+        # O switch-dev já contém a libnx
+        dkp-pacman -S --noconfirm switch-dev switch-curl switch-mesa switch-glm
 
     - name: Build
       run: |
