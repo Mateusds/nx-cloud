@@ -1,357 +1,162 @@
 #include <switch.h>
-#include <stdio.h>
-#include <string.h>
+#include <iostream>
+#include <vector>
 #include <string>
-#include <curl/curl.h>
-#include "../include/nlohmann/json.hpp"
-#include "../include/qrcodegen.hpp"
+#include <SDL.h>
+#include "graphics.hpp"
+#include "discovery.hpp"
+#include "network.hpp"
 
-using json = nlohmann::json;
-// Removido 'using namespace qrcodegen' para evitar conflitos no IDE
+enum AppState {
+    STATE_LOGIN,
+    STATE_LIBRARY,
+    STATE_DRIVE,
+    STATE_GAME_DETAILS,
+    STATE_ERROR
+};
 
-// Configuração do Portal (Altere para seu IP local ou domínio de produção)
-const std::string BASE_URL = "https://nx-cloud.mateusmarquesds.com";
-const std::string APP_VERSION = "1.0.1";
-const std::string APP_PATH = "/switch/AppSwitch.nro";
-
-// Função callback para receber dados do HTTP
-size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-    ((std::string*)userp)->append((char*)contents, size * nmemb);
-    return size * nmemb;
-}
-
-// Gera QR code em ASCII
-void printQRCodeASCII(const std::string& text) {
-    qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText(text.c_str(), qrcodegen::QrCode::Ecc::LOW);
-    int size = qr.getSize();
-    
-    printf("\n");
-    for (int y = 0; y < size; y++) {
-        // Borda esquerda
-        printf("  ");
-        for (int x = 0; x < size; x++) {
-            printf("%s", qr.getModule(x, y) ? "##" : "  ");
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
-// Gera deviceToken único do Switch
-std::string getDeviceToken() {
-    // Em produção, usar serial do console ou UUID único
-    // Por enquanto, usa um valor fixo para teste
-    return std::string("switch-device-001");
-}
-
-// Cria sessão no backend
-std::string createSession(const std::string& deviceToken) {
-    CURL* curl = curl_easy_init();
-    std::string response;
-    
-    if(curl) {
-        std::string url = BASE_URL + "/api/session/init";
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        
-        // JSON body
-        std::string jsonBody = "{\"deviceToken\":\"" + deviceToken + "\"}";
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonBody.c_str());
-        
-        // Headers
-        struct curl_slist* headers = curl_slist_append(NULL, "Content-Type: application/json");
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        
-        // Desativa verificação SSL para funcionar no Switch
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-        
-        // Callback
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-        
-        CURLcode res = curl_easy_perform(curl);
-        if(res != CURLE_OK) {
-            printf("Erro na requisição: %s\n", curl_easy_strerror(res));
-        }
-        
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
-    }
-    
-    return response;
-}
-
-// Verifica versão do app
-std::string checkAppVersion() {
-    CURL* curl = curl_easy_init();
-    std::string response;
-    
-    if(curl) {
-        std::string url = BASE_URL + "/api/app/version";
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-        
-        // Desativa verificação SSL
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-        
-        CURLcode res = curl_easy_perform(curl);
-        if(res != CURLE_OK) {
-            printf("Erro ao verificar versão: %s\n", curl_easy_strerror(res));
-        }
-        
-        curl_easy_cleanup(curl);
-    }
-    
-    return response;
-}
-
-// Download do arquivo .nro
-bool downloadUpdate(const std::string& url, const std::string& outputPath) {
-    CURL* curl = curl_easy_init();
-    FILE* fp = fopen(outputPath.c_str(), "wb");
-    
-    if(!curl || !fp) {
-        if(fp) fclose(fp);
-        if(curl) curl_easy_cleanup(curl);
-        return false;
-    }
-    
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-    
-    // Desativa verificação SSL
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-    
-    CURLcode res = curl_easy_perform(curl);
-    
-    fclose(fp);
-    curl_easy_cleanup(curl);
-    
-    return (res == CURLE_OK);
-}
-
-// Verifica status da sessão
-std::string checkSessionStatus(const std::string& deviceToken) {
-    CURL* curl = curl_easy_init();
-    std::string response;
-    
-    if(curl) {
-        std::string url = BASE_URL + "/api/session/status?deviceToken=" + deviceToken;
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-        
-        // Desativa verificação SSL
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-        
-        CURLcode res = curl_easy_perform(curl);
-        if(res != CURLE_OK) {
-            printf("Erro na requisição: %s\n", curl_easy_strerror(res));
-        }
-        
-        curl_easy_cleanup(curl);
-    }
-    
-    return response;
-}
-
-// (Versão e caminhos movidos para o topo)
-
-int main(int argc, char **argv) {
-    consoleInit(NULL);
-    
-    // Inicializa os controles
-    PadState pad;
-    padInitializeDefault(&pad);
-
-    // Inicializa curl
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-
-    // Verifica atualização ao iniciar
-    printf("Portal NX-Cloud v%s\n", APP_VERSION.c_str());
-    printf("--------------------\n");
-    printf("Verificando atualizações...\n\n");
-    
-    std::string versionResponse = checkAppVersion();
-    bool updateAvailable = false;
-    std::string latestVersion;
-    std::string downloadUrl;
-    bool forceUpdate = false;
-    
-    try {
-        auto versionJson = json::parse(versionResponse);
-        if (versionJson.contains("version")) {
-            latestVersion = versionJson["version"].get<std::string>();
-            if (latestVersion != APP_VERSION) {
-                updateAvailable = true;
-                if (versionJson.contains("downloadUrl")) {
-                    downloadUrl = versionJson["downloadUrl"].get<std::string>();
-                }
-                if (versionJson.contains("forceUpdate")) {
-                    forceUpdate = versionJson["forceUpdate"].get<bool>();
-                }
-                
-                printf("NOVA VERSÃO DISPONÍVEL!\n");
-                printf("Versão atual: %s\n", APP_VERSION.c_str());
-                printf("Nova versão: %s\n", latestVersion.c_str());
-                
-                if (versionJson.contains("changelog")) {
-                    printf("\nChangelog: %s\n", versionJson["changelog"].get<std::string>().c_str());
-                }
-                
-                printf("\nDeseja atualizar?\n");
-                printf("(A) Sim - (B) Não\n\n");
-            } else {
-                printf("App está na versão mais recente!\n\n");
-            }
-        }
-    } catch (...) {
-        printf("Não foi possível verificar atualizações\n\n");
-    }
-    
-    // Loop de atualização
-    bool updating = updateAvailable;
-    bool updateDone = false;
-    
-    while(appletMainLoop() && updating) {
-        padUpdate(&pad);
-        u64 kDown = padGetButtonsDown(&pad);
-        
-        if (kDown & HidNpadButton_A) {
-            printf("Baixando atualização...\n");
-            
-            // Download para arquivo temporário
-            std::string tempPath = APP_PATH + ".tmp";
-            if (downloadUpdate(downloadUrl, tempPath)) {
-                printf("Download concluído!\n");
-                printf("Instalando atualização...\n");
-                
-                // Remove arquivo antigo e renomeia novo
-                remove(APP_PATH.c_str());
-                rename(tempPath.c_str(), APP_PATH.c_str());
-                
-                printf("Atualização instalada com sucesso!\n");
-                printf("Reinicie o app para usar a nova versão.\n");
-                updateDone = true;
-                
-                printf("\nPressione (+) para sair\n");
-            } else {
-                printf("Erro ao baixar atualização.\n");
-                remove(tempPath.c_str());
-            }
-            
-            if (!forceUpdate || updateDone) {
-                updating = false;
-            }
-        }
-        
-        if (kDown & HidNpadButton_B) {
-            if (!forceUpdate) {
-                printf("Atualização ignorada.\n\n");
-                updating = false;
-            } else {
-                printf("Esta atualização é obrigatória!\n");
-            }
-        }
-        
-        if (kDown & HidNpadButton_Plus && updateDone) {
-            break;
-        }
-        
-        consoleUpdate(NULL);
-    }
-    
-    if (updateDone) {
-        // Aguarda usuário sair após atualização
-        while(appletMainLoop()) {
-            padUpdate(&pad);
-            if (padGetButtonsDown(&pad) & HidNpadButton_Plus) {
-                break;
-            }
-            consoleUpdate(NULL);
-        }
-        
-        curl_global_cleanup();
-        consoleExit(NULL);
-        return 0;
-    }
-
-    // Gera deviceToken
-    std::string deviceToken = getDeviceToken();
-    
-    // Cria sessão
-    std::string sessionResponse = createSession(deviceToken);
-    
-    // Parse JSON response
+struct GlobalContext {
+    AppState state = STATE_LOGIN;
+    std::string userId; 
+    std::string deviceToken;
     std::string authUrl;
-    try {
-        auto jsonData = json::parse(sessionResponse);
-        if (jsonData.contains("authUrl")) {
-            authUrl = jsonData["authUrl"];
-        }
-    } catch (...) {
-        authUrl = BASE_URL + "/auth?sessionId=error";
+    std::string userName;
+    std::vector<GameInfo> games;
+    std::vector<DriveFile> driveFiles;
+    int selectedGame = 0;
+    int selectedFile = 0;
+} ctx;
+
+PadState pad;
+
+void handleInput() {
+    padUpdate(&pad);
+    u64 kDown = padGetButtonsDown(&pad);
+
+    if (ctx.state == STATE_LIBRARY || ctx.state == STATE_DRIVE) {
+        if (kDown & HidNpadButton_R) ctx.state = STATE_DRIVE;
+        if (kDown & HidNpadButton_L) ctx.state = STATE_LIBRARY;
     }
 
-    printf("--------------------\n");
-    printf("Device Token: %s\n", deviceToken.c_str());
-    printf("Auth URL: %s\n\n", authUrl.c_str());
-    printf("QR Code:\n");
-    printQRCodeASCII(authUrl);
-    printf("Escaneie o QR code acima\n");
-    printf("Pressione (A) para verificar status\n");
-    printf("Pressione (+) para sair\n");
+    if (ctx.state == STATE_LIBRARY) {
+        if (kDown & HidNpadButton_Right) ctx.selectedGame++;
+        if (kDown & HidNpadButton_Left) ctx.selectedGame--;
+        if (kDown & HidNpadButton_Down) ctx.selectedGame += 6;
+        if (kDown & HidNpadButton_Up) ctx.selectedGame -= 6;
+        if (ctx.selectedGame < 0) ctx.selectedGame = 0;
+        if (ctx.selectedGame >= (int)ctx.games.size()) ctx.selectedGame = ctx.games.size() - 1;
+    } 
+    else if (ctx.state == STATE_DRIVE) {
+        if (kDown & HidNpadButton_Down) ctx.selectedFile++;
+        if (kDown & HidNpadButton_Up) ctx.selectedFile--;
+        if (ctx.selectedFile < 0) ctx.selectedFile = 0;
+        if (ctx.selectedFile >= (int)ctx.driveFiles.size()) ctx.selectedFile = ctx.driveFiles.size() - 1;
+    }
+}
 
-    bool connected = false;
+void renderUI() {
+    Graphics::clear();
+
+    // Barra Superior
+    Graphics::drawRect(0, 0, 1280, 60, {30, 30, 40, 255});
+    Graphics::drawText("NX-Cloud (FREE VERSION)", 20, 15, 24, {0, 255, 150, 255});
     
-    while(appletMainLoop()) {
-        padUpdate(&pad);
-        u64 kDown = padGetButtonsDown(&pad);
-
-        if (kDown & HidNpadButton_Plus) {
-            break;
-        }
-
-        if (kDown & HidNpadButton_A && !connected) {
-            printf("Verificando status...\n");
-            std::string status = checkSessionStatus(deviceToken);
-            
-            try {
-                auto statusJson = json::parse(status);
-                if (statusJson.contains("status") && statusJson["status"] == "CONNECTED") {
-                    connected = true;
-                    printf("\n=== CONECTADO! ===\n");
-                    
-                    if (statusJson.contains("user")) {
-                        auto user = statusJson["user"];
-                        if (user.contains("name")) {
-                            printf("Usuário: %s\n", user["name"].get<std::string>().c_str());
-                        } else if (user.contains("email")) {
-                            printf("Email: %s\n", user["email"].get<std::string>().c_str());
-                        }
-                    }
-                    
-                    printf("\nPressione (+) para sair\n");
-                } else {
-                    printf("Status: PENDENTE\n");
-                }
-            } catch (...) {
-                printf("Erro ao verificar status\n");
-            }
-        }
-
-        consoleUpdate(NULL);
+    if (ctx.state == STATE_LIBRARY || ctx.state == STATE_DRIVE) {
+        SDL_Color tabColor = (ctx.state == STATE_LIBRARY) ? SDL_Color{0, 255, 150, 255} : SDL_Color{150, 150, 150, 255};
+        Graphics::drawText("L: BIBLIOTECA", 400, 15, 20, tabColor);
+        tabColor = (ctx.state == STATE_DRIVE) ? SDL_Color{0, 255, 150, 255} : SDL_Color{150, 150, 150, 255};
+        Graphics::drawText("R: GOOGLE DRIVE", 650, 15, 20, tabColor);
     }
 
-    // Cleanup
-    curl_global_cleanup();
-    consoleExit(NULL);
+    if (ctx.state == STATE_LOGIN) {
+        Graphics::drawText("Conecte sua conta para sincronizar saves e instalar jogos", 380, 130, 22, {255, 255, 255, 255});
+        if (!ctx.authUrl.empty()) {
+            Graphics::drawQRCode(ctx.authUrl, 490, 180, 300);
+            Graphics::drawText("Escaneie o QR Code no seu celular", 450, 500, 20, {200, 200, 200, 255});
+        }
+    } 
+    else if (ctx.state == STATE_LIBRARY) {
+        Graphics::drawText("Logado como: " + ctx.userName, 950, 15, 18, {255, 255, 255, 255});
+        int startX = 100, startY = 100;
+        for (int i = 0; i < (int)ctx.games.size(); i++) {
+            int row = i / 6, col = i % 6;
+            int x = startX + (col * 180), y = startY + (row * 180);
+            if (i == ctx.selectedGame) Graphics::drawRect(x - 5, y - 5, 160, 160, {0, 255, 150, 255});
+            if (ctx.games[i].icon) Graphics::drawImage(ctx.games[i].icon, x, y, 150, 150);
+            else Graphics::drawRect(x, y, 150, 150, {50, 50, 60, 255});
+        }
+        if (!ctx.games.empty()) {
+            Graphics::drawRect(0, 640, 1280, 80, {25, 25, 35, 255});
+            Graphics::drawText("Jogo: " + ctx.games[ctx.selectedGame].name, 50, 665, 22, {255, 255, 255, 255});
+            Graphics::drawText("(A) BACKUP    (Y) RESTAURAR", 850, 665, 22, {0, 255, 150, 255});
+        }
+    }
+    else if (ctx.state == STATE_DRIVE) {
+        Graphics::drawText("Navegador Google Drive:", 50, 80, 22, {255, 255, 255, 255});
+        for (int i = 0; i < (int)ctx.driveFiles.size(); i++) {
+            int y = 120 + (i * 40);
+            if (i == ctx.selectedFile) Graphics::drawRect(45, y - 5, 1190, 35, {50, 50, 70, 255});
+            
+            std::string info = ctx.driveFiles[i].isFolder ? "📁 " : "🎮 ";
+            info += ctx.driveFiles[i].name;
+            if (!ctx.driveFiles[i].system.empty()) {
+                info += " [" + ctx.driveFiles[i].system + "]";
+            }
+            
+            Graphics::drawText(info, 60, y, 18, {220, 220, 220, 255});
+        }
+        Graphics::drawRect(0, 640, 1280, 80, {25, 25, 35, 255});
+        Graphics::drawText("(A) INSTALAR JOGO NO SWITCH", 850, 665, 22, {0, 255, 150, 255});
+    }
+
+    Graphics::present();
+}
+
+int main(int argc, char* argv[]) {
+    socketInitializeDefault();
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    padInitializeDefault(&pad);
+    if (!Graphics::init()) return 0;
+
+    bool nsReady = R_SUCCEEDED(nsInitialize());
+    
+    // Usa o serial do console como identificador persistente da sessão.
+    if (R_SUCCEEDED(setsysInitialize())) {
+        SetSysSerialNumber serial{};
+        if (R_SUCCEEDED(setsysGetSerialNumber(&serial)) && serial.number[0] != '\0') {
+            ctx.deviceToken = serial.number;
+        } else {
+            ctx.deviceToken = "GENERIC_SWITCH_ID";
+        }
+        setsysExit();
+    } else {
+        ctx.deviceToken = "GENERIC_SWITCH_ID";
+    }
+
+    SessionResponse res = Network::initSession(ctx.deviceToken);
+    ctx.authUrl = res.authUrl;
+    if (nsReady) {
+        ctx.games = Discovery::listGames();
+    }
+
+    u64 lastPoll = 0;
+    while (appletMainLoop()) {
+        handleInput();
+        if (ctx.state == STATE_LOGIN && (svcGetSystemTick() - lastPoll) > 2000000000ULL) {
+            SessionResponse statusRes = Network::checkStatus(ctx.deviceToken);
+            if (statusRes.status == "CONNECTED") {
+                ctx.state = STATE_LIBRARY;
+                ctx.userName = statusRes.userName;
+            }
+            lastPoll = svcGetSystemTick();
+        }
+        renderUI();
+        if (padGetButtonsDown(&pad) & HidNpadButton_Plus) break;
+    }
+
+    Discovery::cleanup(ctx.games);
+    if (nsReady) nsExit();
+    Graphics::exit();
+    socketExit();
     return 0;
 }
