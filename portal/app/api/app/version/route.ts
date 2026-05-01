@@ -11,4 +11,4 @@ const APP_VERSION = {
 
 export async function GET() {
   return Response.json(APP_VERSION);
-} 
+}

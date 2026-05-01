@@ -1,0 +1,40 @@
+name: Update API Version on Release
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Update Version File
+        working-directory: ./portal
+        env:
+          CHANGELOG: ${{ github.event.release.body }}
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          REPO="${{ github.repository }}"
+          node scripts/update-version.mjs "$VERSION" "" "$REPO"
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add portal/app/api/app/version/route.ts
+          # Só commita se houver mudanças reais
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update api version to ${{ github.event.release.tag_name }}"
+            git push origin main
+          else
+            echo "Nenhuma mudança detectada no arquivo de versão."
+          fi

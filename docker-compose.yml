@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  # Banco de dados para usuários e tokens
+  db:
+    image: postgres:15-alpine
+    container_name: nx-cloud-db
+    restart: always
+    environment:
+      POSTGRES_USER: mateus
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: nx_cloud
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Cache para o handshake do QR Code (Switch <-> Portal)
+  redis:
+    image: redis:alpine
+    container_name: nx-cloud-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
