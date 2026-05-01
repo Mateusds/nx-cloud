@@ -157,47 +157,32 @@ export default function DashboardClient({ userId }: DashboardClientProps) {
 
       {loading && <div className="empty-state">Carregando...</div>}
 
-      {!loading && user?.sessions && user.sessions.length > 0 && user.sessions[0].deviceName && (
-        <section className="device-section" style={{ marginBottom: '2rem' }}>
-          <div className="upload-card" style={{ borderLeft: '4px solid #00ff96' }}>
-            <h2 className="section-title">Dispositivo Conectado</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-              <div>
-                <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '4px' }}>NOME DO APARELHO</p>
-                <p style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{user.sessions[0].deviceName || 'Nintendo Switch'}</p>
-              </div>
-              <div>
-                <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '4px' }}>ARMAZENAMENTO INTERNO</p>
-                <p style={{ fontSize: '1rem' }}>
-                  {user.sessions[0].nandFree} livre / {user.sessions[0].nandTotal}
-                </p>
-                <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', marginTop: '8px' }}>
-                  <div style={{ 
-                    height: '100%', 
-                    background: '#00ff96', 
-                    borderRadius: '3px',
-                    width: '70%' // Simplificação: poderíamos calcular o % real aqui
-                  }} />
+      {!loading && (() => {
+        const activeSession = user?.sessions?.find(s => s.deviceName && s.nandTotal);
+        if (!activeSession) return null;
+        
+        return (
+          <section className="device-section" style={{ marginBottom: '2rem' }}>
+            <div className="upload-card" style={{ borderLeft: '4px solid #00ff96' }}>
+              <h2 className="section-title">Dispositivo Conectado</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                <div>
+                  <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '4px' }}>NOME DO APARELHO</p>
+                  <p style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{activeSession.deviceName}</p>
                 </div>
-              </div>
-              <div>
-                <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '4px' }}>CARTÃO SD</p>
-                <p style={{ fontSize: '1rem' }}>
-                  {user.sessions[0].sdFree} livre / {user.sessions[0].sdTotal}
-                </p>
-                <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', marginTop: '8px' }}>
-                  <div style={{ 
-                    height: '100%', 
-                    background: '#00ff96', 
-                    borderRadius: '3px',
-                    width: '45%' // Simplificação
-                  }} />
+                <div>
+                  <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '4px' }}>ARMAZENAMENTO INTERNO</p>
+                  <p style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{activeSession.nandFree} / {activeSession.nandTotal}</p>
+                </div>
+                <div>
+                  <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '4px' }}>SD CARD</p>
+                  <p style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{activeSession.sdFree} / {activeSession.sdTotal}</p>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
       <section className="upload-section">
         <div className="upload-card">

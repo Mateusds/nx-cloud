@@ -16,28 +16,48 @@ export async function POST(request: Request) {
     let session;
 
     if (deviceToken && deviceToken !== 'unknown-device') {
-      // Para consoles reais: cria ou atualiza a sessão existente (evita erro de Unique Constraint)
-      session = await prisma.session.upsert({
+      // Verifica se já existe uma sessão conectada para este dispositivo
+      const existing = await prisma.session.findUnique({
         where: { deviceToken },
-        update: {
-          status: 'PENDING',
-          userId: null,
-          deviceName: body.deviceName,
-          sdTotal: body.sdTotal,
-          sdFree: body.sdFree,
-          nandTotal: body.nandTotal,
-          nandFree: body.nandFree,
-        },
-        create: {
-          status: 'PENDING',
-          deviceToken,
-          deviceName: body.deviceName,
-          sdTotal: body.sdTotal,
-          sdFree: body.sdFree,
-          nandTotal: body.nandTotal,
-          nandFree: body.nandFree,
-        },
+        include: { user: true }
       });
+
+      if (existing && existing.status === 'CONNECTED' && existing.userId) {
+        // Já está conectado, mantém a sessão atual e apenas atualiza os dados de storage
+        session = await prisma.session.update({
+          where: { deviceToken },
+          data: {
+            deviceName: body.deviceName,
+            sdTotal: body.sdTotal,
+            sdFree: body.sdFree,
+            nandTotal: body.nandTotal,
+            nandFree: body.nandFree,
+          }
+        });
+      } else {
+        // Para consoles reais: cria ou reseta a sessão existente
+        session = await prisma.session.upsert({
+          where: { deviceToken },
+          update: {
+            status: 'PENDING',
+            userId: null,
+            deviceName: body.deviceName,
+            sdTotal: body.sdTotal,
+            sdFree: body.sdFree,
+            nandTotal: body.nandTotal,
+            nandFree: body.nandFree,
+          },
+          create: {
+            status: 'PENDING',
+            deviceToken,
+            deviceName: body.deviceName,
+            sdTotal: body.sdTotal,
+            sdFree: body.sdFree,
+            nandTotal: body.nandTotal,
+            nandFree: body.nandFree,
+          },
+        });
+      }
     } else {
       // Para testes via navegador ou dispositivos sem token
       session = await prisma.session.create({

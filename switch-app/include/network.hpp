@@ -41,6 +41,7 @@ public:
     static bool uploadSave(uint64_t titleId, const std::string& filePath);
     static bool downloadSave(uint64_t titleId, const std::string& destinationPath);
     static std::string checkUpdate();
+    static bool downloadFile(const std::string& url, const std::string& path);
 };
 
 #endif

@@ -30,6 +30,7 @@ enum AppState {
     STATE_LOGIN,
     STATE_LIBRARY,
     STATE_DRIVE,
+    STATE_UPDATE_PROMPT,
     STATE_GAME_DETAILS,
     STATE_ERROR
 };
@@ -45,6 +46,9 @@ struct GlobalContext {
     int selectedGame = 0;
     int selectedFile = 0;
     std::string newVersion;
+    std::string statusMessage;
+    std::string nroPath = "/switch/AppSwitch.nro";
+    u64 statusTimeout = 0;
 } ctx;
 
 PadState pad;
@@ -57,7 +61,14 @@ void handleInput() {
         if (kDown & HidNpadButton_R) {
             ctx.state = STATE_DRIVE;
             if (ctx.driveFiles.empty() && !ctx.userId.empty()) {
+                ctx.statusMessage = "Carregando Google Drive...";
                 ctx.driveFiles = Network::listDriveFiles(ctx.userId);
+                if (ctx.driveFiles.empty()) {
+                    ctx.statusMessage = "Nenhum arquivo encontrado ou erro no Drive.";
+                } else {
+                    ctx.statusMessage = "Arquivos carregados com sucesso!";
+                }
+                ctx.statusTimeout = svcGetSystemTick() + 57600000ULL; // 3 segundos
             }
         }
         if (kDown & HidNpadButton_L) ctx.state = STATE_LIBRARY;
@@ -81,15 +92,42 @@ void handleInput() {
     // Ações de Botões (A, Y, B)
     if (kDown & HidNpadButton_A) {
         if (ctx.state == STATE_LIBRARY && !ctx.games.empty()) {
-            // Backup logic would go here
+            ctx.statusMessage = "BACKUP: " + ctx.games[ctx.selectedGame].name;
+            ctx.statusTimeout = svcGetSystemTick() + 57600000ULL;
         } else if (ctx.state == STATE_DRIVE && !ctx.driveFiles.empty()) {
-            // Install logic would go here
+            ctx.statusMessage = "INSTALANDO: " + ctx.driveFiles[ctx.selectedFile].name;
+            ctx.statusTimeout = svcGetSystemTick() + 57600000ULL;
         }
     }
 
-    if (kDown & HidNpadButton_B) {
-        // No lugar de fechar o app com B, vamos apenas ignorar ou voltar estados
-        // se necessário. O Plus (+) continua sendo o botão de sair.
+    if (kDown & HidNpadButton_Y) {
+        if (ctx.state == STATE_LIBRARY && !ctx.games.empty()) {
+            ctx.statusMessage = "RESTAURANDO: " + ctx.games[ctx.selectedGame].name;
+            ctx.statusTimeout = svcGetSystemTick() + 57600000ULL;
+        }
+    }
+
+    if (ctx.state == STATE_DRIVE) {
+        // Volta para a biblioteca se estiver no drive
+        if (ctx.state == STATE_DRIVE) ctx.state = STATE_LIBRARY;
+    }
+
+    if (ctx.state == STATE_UPDATE_PROMPT) {
+        if (kDown & HidNpadButton_A) {
+            ctx.statusMessage = "Baixando v" + ctx.newVersion + "...";
+            ctx.statusTimeout = svcGetSystemTick() + 2000000000ULL; // Longo tempo
+            
+            std::string updateUrl = "https://github.com/Mateusds/nx-cloud/releases/latest/download/AppSwitch.nro";
+            if (Network::downloadFile(updateUrl, ctx.nroPath)) {
+                ctx.statusMessage = "Sucesso! Reinicie o app para aplicar.";
+            } else {
+                ctx.statusMessage = "Erro no download. Tente novamente.";
+            }
+            ctx.statusTimeout = svcGetSystemTick() + 100000000ULL; 
+        }
+        if (kDown & HidNpadButton_B) {
+            ctx.state = STATE_LIBRARY;
+        }
     }
 }
 
@@ -140,11 +178,29 @@ void renderUI() {
             Graphics::drawText(info, 60, y, 18, {220, 220, 220, 255});
         }
     }
+    else if (ctx.state == STATE_UPDATE_PROMPT) {
+        Graphics::drawRect(200, 150, 880, 400, {40, 40, 60, 255});
+        Graphics::drawText("NOVA ATUALIZACAO DISPONIVEL", 350, 200, 30, {0, 255, 150, 255});
+        Graphics::drawText("Versao Atual: " + APP_VERSION, 350, 260, 20, {200, 200, 200, 255});
+        Graphics::drawText("Nova Versao:  " + ctx.newVersion, 350, 300, 20, {255, 255, 255, 255});
+        
+        Graphics::drawText("Deseja atualizar agora?", 350, 380, 22, {255, 255, 255, 255});
+        Graphics::drawText("(A) SIM, ATUALIZAR AGORA", 350, 440, 22, {0, 255, 150, 255});
+        Graphics::drawText("(B) NAO, DEPOIS", 350, 480, 22, {255, 100, 100, 255});
+    }
 
-    // Notificação de Atualização
-    if (!ctx.newVersion.empty() && ctx.newVersion != APP_VERSION) {
+    // Notificação de Atualização (discreta se não estiver no prompt)
+    if (ctx.state != STATE_UPDATE_PROMPT && !ctx.newVersion.empty() && ctx.newVersion != APP_VERSION) {
         Graphics::drawRect(340, 20, 600, 40, {255, 50, 50, 255});
-        Graphics::drawText("NOVA ATUALIZAÇÃO DISPONÍVEL: " + ctx.newVersion, 360, 30, 20, {255, 255, 255, 255});
+        Graphics::drawText("NOVA ATUALIZACAO DISPONIVEL: " + ctx.newVersion, 360, 30, 20, {255, 255, 255, 255});
+    }
+
+    // Mensagens de Status (Toast)
+    if (!ctx.statusMessage.empty() && svcGetSystemTick() < ctx.statusTimeout) {
+        Graphics::drawRect(400, 580, 480, 40, {50, 50, 150, 255});
+        Graphics::drawText(ctx.statusMessage, 420, 590, 16, {255, 255, 255, 255});
+    } else if (svcGetSystemTick() >= ctx.statusTimeout) {
+        ctx.statusMessage = "";
     }
 
     // Rodapé com guia de botões
@@ -169,6 +225,8 @@ void renderUI() {
 }
 
 int main(int argc, char* argv[]) {
+    if (argc > 0) ctx.nroPath = argv[0];
+    
     socketInitializeDefault();
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
     padInitializeDefault(&pad);
@@ -225,6 +283,9 @@ int main(int argc, char* argv[]) {
 
     // Verifica atualizações no GitHub
     ctx.newVersion = Network::checkUpdate();
+    if (!ctx.newVersion.empty() && ctx.newVersion != APP_VERSION) {
+        ctx.state = STATE_UPDATE_PROMPT;
+    }
 
     // Tenta reconectar automaticamente se já estiver vinculado
     SessionResponse statusRes = Network::checkStatus(ctx.deviceToken);
