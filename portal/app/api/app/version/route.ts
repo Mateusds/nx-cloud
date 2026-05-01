@@ -1,10 +1,10 @@
 export const runtime = 'nodejs';
 
 const APP_VERSION = {
-  version: '11',
+  version: '13',
   minVersion: '1.0.0',
-  downloadUrl: 'https://github.com/Mateusds/nx-cloud/releases/download/v11/AppSwitch.nro',
-  changelog: 'v11',
+  downloadUrl: 'https://github.com/Mateusds/nx-cloud/releases/download/v13/AppSwitch.nro',
+  changelog: 'v13',
   forceUpdate: false,
   releasedAt: '2026-05-01',
 };
