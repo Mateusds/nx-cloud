@@ -13,13 +13,20 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     return size * nmemb;
 }
 
-SessionResponse Network::initSession(const std::string& deviceToken) {
+SessionResponse Network::initSession(const DeviceInfo& info) {
     CURL* curl = curl_easy_init();
     std::string response;
     SessionResponse res;
     if(curl) {
         std::string url = BASE_URL + "/api/session/init";
-        json j = {{"deviceToken", deviceToken}};
+        json j = {
+            {"deviceToken", info.deviceToken},
+            {"deviceName", info.deviceName},
+            {"sdTotal", info.sdTotal},
+            {"sdFree", info.sdFree},
+            {"nandTotal", info.nandTotal},
+            {"nandFree", info.nandFree}
+        };
         std::string postData = j.dump();
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData.c_str());

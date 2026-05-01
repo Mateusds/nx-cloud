@@ -32,6 +32,11 @@ export async function GET(request: Request) {
     return Response.json({
       status: session.status,
       userId: session.userId,
+      deviceName: session.deviceName,
+      sdTotal: session.sdTotal,
+      sdFree: session.sdFree,
+      nandTotal: session.nandTotal,
+      nandFree: session.nandFree,
       user: session.user ? {
         id: session.user.id,
         email: session.user.email,

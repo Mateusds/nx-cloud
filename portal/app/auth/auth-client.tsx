@@ -17,6 +17,7 @@ const GoogleLogin = dynamic(
 function AuthPanel() {
   const searchParams = useSearchParams();
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [deviceInfo, setDeviceInfo] = useState<any>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '';
@@ -33,8 +34,18 @@ function AuthPanel() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (sessionId) {
+      fetch(`/api/session/status?sessionId=${sessionId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.error) {
+            setDeviceInfo(data);
+          }
+        })
+        .catch(console.error);
+    }
     setGoogleReady(true);
-  }, []);
+  }, [sessionId]);
 
   const title = useMemo(() => {
     return sessionId ? `Sessão ${sessionId}` : 'Nenhuma sessão encontrada';
@@ -110,6 +121,24 @@ function AuthPanel() {
           <p className="auth-text">
             Faça login para vincular a sessão do dispositivo ao seu perfil.
           </p>
+          
+          {deviceInfo && (
+            <div className="device-info" style={{ marginBottom: '1.5rem', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#fff' }}>Aparelho Detectado</h3>
+              <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.875rem', color: '#ccc' }}><strong>Nome:</strong> {deviceInfo.deviceName || 'Nintendo Switch'}</p>
+              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#aaa', marginTop: '0.5rem' }}>
+                <div>
+                  <strong>Armazenamento Interno:</strong><br />
+                  {deviceInfo.nandFree || 'N/A'} livre / {deviceInfo.nandTotal || 'N/A'}
+                </div>
+                <div>
+                  <strong>Cartão SD:</strong><br />
+                  {deviceInfo.sdFree || 'N/A'} livre / {deviceInfo.sdTotal || 'N/A'}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="auth-session">
             <strong>Sessão:</strong> {title}
           </div>

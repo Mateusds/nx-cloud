@@ -21,9 +21,18 @@ struct DriveFile {
     bool isFolder;
 };
 
+struct DeviceInfo {
+    std::string deviceToken;
+    std::string deviceName;
+    std::string sdTotal;
+    std::string sdFree;
+    std::string nandTotal;
+    std::string nandFree;
+};
+
 class Network {
 public:
-    static SessionResponse initSession(const std::string& deviceToken);
+    static SessionResponse initSession(const DeviceInfo& info);
     static SessionResponse checkStatus(const std::string& deviceToken);
     static SDL_Texture* downloadImage(const std::string& url);
     static std::vector<DriveFile> listDriveFiles(const std::string& userId, const std::string& folderId = "root");

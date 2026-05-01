@@ -19,6 +19,12 @@ export async function GET(request: Request) {
         name: true,
         role: true,
         createdAt: true,
+        sessions: {
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 1
+        }
       },
     });
 
