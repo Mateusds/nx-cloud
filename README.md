@@ -210,25 +210,26 @@ O app Switch possui sistema de atualização automática integrado:
 
 ### Automação de Versão (Recomendado):
 
-O sistema utiliza **GitHub Actions** para automatizar a atualização da API sempre que uma nova versão é lançada.
+O app do Switch busca a versão mais recente diretamente da **última release publicada no GitHub**.
 
 1. **Desenvolva e compile:** Gere o novo `AppSwitch.nro`.
 2. **Crie uma Release no GitHub:**
    - Acesse `Releases` -> `Draft a new release`.
    - Use uma tag de versão (ex: `v0.6.0`).
-   - Escreva as novidades no campo **Description** (elas aparecerão no Switch como changelog).
+   - Escreva as novidades no campo **Description**.
    - Anexe o arquivo `AppSwitch.nro`.
    - Clique em **Publish release**.
-3. **Automação Total:**
-   - O GitHub Actions detectará a nova release.
-   - O arquivo `portal/app/api/app/version/route.ts` será atualizado automaticamente com a nova versão, link de download e changelog.
-   - Um commit será feito automaticamente na branch `main`.
-   - Seu deploy (Vercel/Netlify) atualizará a API online.
+3. **Consumo automático:**
+   - A API `GET /api/app/version` consulta a última release publicada.
+   - O Switch baixa o asset `AppSwitch.nro` da release mais recente.
+   - O changelog exibido vem da descrição da release.
+   - Não é preciso editar o código do portal para cada nova versão.
 
 **Vantagens:**
-- Zero edição manual de código para cada release.
-- Consistência garantida entre o link de download e a versão.
-- Changelog sincronizado com a descrição da release.
+- Sempre usa a release mais recente sem editar arquivo manualmente.
+- O download aponta para o asset publicado no GitHub.
+- O changelog fica centralizado na própria release.
+- O fluxo funciona sem workflow de atualização de arquivo.
 
 ## Configurando um Admin
 

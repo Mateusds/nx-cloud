@@ -10,7 +10,7 @@ using json = nlohmann::json;
 // Removido 'using namespace qrcodegen' para evitar conflitos no IDE
 
 // Configuração do Portal (Altere para seu IP local ou domínio de produção)
-const std::string BASE_URL = "http://192.168.0.15:3000";
+const std::string BASE_URL = "https://nx-cloud.mateusmarquesds.com";
 const std::string APP_VERSION = "1.0.1";
 const std::string APP_PATH = "/switch/AppSwitch.nro";
 
