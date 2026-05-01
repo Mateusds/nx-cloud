@@ -6,8 +6,9 @@
 std::vector<GameInfo> Discovery::listGames() {
     std::vector<GameInfo> games;
     NsApplicationRecord records[100];
-    int total = 0;
+    s32 total = 0;
 
+    // nsListApplicationRecord (singular) é o nome correto na libnx
     if (R_SUCCEEDED(nsListApplicationRecord(records, 100, 0, &total))) {
         for (int i = 0; i < total; i++) {
             GameInfo game;
@@ -19,6 +20,8 @@ std::vector<GameInfo> Discovery::listGames() {
                 NacpLanguageEntry* langEntry = nullptr;
                 if (R_SUCCEEDED(nsGetApplicationDesiredLanguage(&controlData.nacp, &langEntry)) && langEntry != nullptr && langEntry->name[0] != '\0') {
                     game.name = langEntry->name;
+                } else if (controlData.nacp.lang[0].name[0] != '\0') {
+                    game.name = controlData.nacp.lang[0].name;
                 } else {
                     game.name = "Jogo Desconhecido";
                 }
