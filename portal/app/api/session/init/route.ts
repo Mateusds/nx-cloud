@@ -38,7 +38,15 @@ export async function POST(request: Request) {
       });
     }
 
-    const authUrl = new URL(`/auth?sessionId=${session.id}`, request.url).toString();
+    // Força o uso da URL de produção se estiver configurada no .env
+    // Caso contrário, tenta detectar pelos headers ou pela URL da requisição
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+    const protocol = request.headers.get('x-forwarded-proto') || 'https';
+    
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                    (host ? `${protocol}://${host}` : new URL(request.url).origin);
+    
+    const authUrl = `${baseUrl}/auth?sessionId=${session.id}`;
 
     return Response.json({ sessionId: session.id, authUrl });
   } catch (error) {
