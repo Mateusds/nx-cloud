@@ -9,7 +9,7 @@
 #include "discovery.hpp"
 #include "network.hpp"
 
-const std::string APP_VERSION = "v14";
+const std::string APP_VERSION = "v16";
 
 std::string formatBytes(s64 bytes) {
     std::stringstream ss;
@@ -198,7 +198,9 @@ void renderUI() {
             Graphics::drawText("Escaneie com seu celular", 520, 500, 18, {200, 200, 220, 255});
             Graphics::drawText("para conectar sua conta", 530, 530, 16, {140, 140, 160, 255});
         } else {
-            Graphics::drawText("Conectando ao servidor...", 550, 300, 20, {200, 200, 200, 255});
+            std::string msg = ctx.statusMessage.empty() ? "Conectando ao servidor..." : ctx.statusMessage;
+            Graphics::drawText(msg, 450, 300, 20, {255, 100, 100, 255});
+            Graphics::drawText("Verifique se o portal esta online.", 480, 340, 16, {150, 150, 170, 255});
         }
     }
     else if (ctx.state == STATE_LIBRARY) {
@@ -419,6 +421,11 @@ int main(int argc, char* argv[]) {
     // Sempre atualiza os dados de storage no servidor ao iniciar
     SessionResponse res = Network::initSession(deviceInfo);
     ctx.authUrl = res.authUrl;
+
+    if (ctx.authUrl.empty()) {
+        ctx.statusMessage = "Erro ao conectar com o servidor. Verifique a internet.";
+        ctx.statusTimeout = svcGetSystemTick() + 150000000ULL;
+    }
 
     // Reconecta automaticamente
     SessionResponse statusRes = Network::checkStatus(ctx.deviceToken);
