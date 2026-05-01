@@ -13,16 +13,34 @@ export async function POST(request: Request) {
     
     const deviceToken = body.deviceToken || 'unknown-device';
 
-    const newSession = await prisma.session.create({
-      data: { 
-        status: 'PENDING',
-        deviceToken,
-      },
-    });
+    let session;
 
-    const authUrl = new URL(`/auth?sessionId=${newSession.id}`, request.url).toString();
+    if (deviceToken && deviceToken !== 'unknown-device') {
+      // Para consoles reais: cria ou atualiza a sessão existente
+      session = await prisma.session.upsert({
+        where: { deviceToken },
+        update: {
+          status: 'PENDING',
+          userId: null,
+        },
+        create: {
+          status: 'PENDING',
+          deviceToken,
+        },
+      });
+    } else {
+      // Para testes via navegador ou dispositivos sem token: sempre cria nova
+      session = await prisma.session.create({
+        data: {
+          status: 'PENDING',
+          deviceToken: null,
+        },
+      });
+    }
 
-    return Response.json({ sessionId: newSession.id, authUrl });
+    const authUrl = new URL(`/auth?sessionId=${session.id}`, request.url).toString();
+
+    return Response.json({ sessionId: session.id, authUrl });
   } catch (error) {
     console.error(error);
     return Response.json(
