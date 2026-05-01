@@ -1,10 +1,10 @@
 export const runtime = 'nodejs';
 
 const APP_VERSION = {
-  version: '7',
+  version: '8',
   minVersion: '1.0.0',
-  downloadUrl: 'https://github.com/Mateusds/nx-cloud/releases/download/v7/AppSwitch.nro',
-  changelog: 'feat: login persistente, polling rápido e verificação de updates via GitHub API',
+  downloadUrl: 'https://github.com/Mateusds/nx-cloud/releases/download/v8/AppSwitch.nro',
+  changelog: 'v8',
   forceUpdate: false,
   releasedAt: '2026-05-01',
 };
