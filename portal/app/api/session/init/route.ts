@@ -4,8 +4,14 @@ export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const deviceToken = body.deviceToken || null;
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      body = {};
+    }
+    
+    const deviceToken = body.deviceToken || 'unknown-device';
 
     const newSession = await prisma.session.create({
       data: { 
