@@ -8,7 +8,7 @@ export default function HomePage() {
           <div className="card">
             <div className="card-inner">
               <span className="kicker">NX Cloud console</span>
-              <h1 className="title">Sessões e login123 agora vivem inteiramente no Next.</h1>
+              <h1 className="title">Sessões e login agora vivem inteiramente no Next.</h1>
               <p className="lead">
                 A antiga divisão entre Vite e Express foi removida. A criação de sessão,
                 a página de autenticação e as rotas de backend agora estão todas no mesmo app.

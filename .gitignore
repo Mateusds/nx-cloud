@@ -24,4 +24,5 @@ switch-app/AppSwitch.nro
 *.tmp
 
 # Dev scripts
-push-to-develop.sh
+# Descomente se quiser ignorar o script localmente, mas geralmente ele fica no git
+# push-to-develop.sh
