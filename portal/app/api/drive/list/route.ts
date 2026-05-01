@@ -19,10 +19,14 @@ export async function GET(request: Request) {
       return Response.json({ error: 'Google Drive não conectado' }, { status: 401 });
     }
 
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+    const protocol = request.headers.get('x-forwarded-proto') || 'https';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
+
     const oauth2Client = new google.auth.OAuth2(
       process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.NEXT_PUBLIC_BASE_URL + '/auth/callback'
+      process.env.NEXT_SECRET_KEY,
+      `${baseUrl}/api/drive/callback`
     );
 
     oauth2Client.setCredentials({

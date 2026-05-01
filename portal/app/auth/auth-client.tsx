@@ -80,9 +80,21 @@ function AuthPanel() {
         localStorage.setItem('nx-cloud-session-id', data.sessionId);
       }
 
-      setMessage('Autenticação concluída!');
+      setMessage('Autenticação concluída! Conectando Google Drive...');
       
-      // Notify parent window and close popup
+      // Automaticamente conecta o Google Drive após login
+      try {
+        const driveRes = await fetch(`/api/drive/connect?userId=${data.userId}`);
+        const driveData = await driveRes.json();
+        if (driveData.authUrl) {
+          window.location.href = driveData.authUrl;
+          return;
+        }
+      } catch (driveErr) {
+        console.error('Drive connect error:', driveErr);
+      }
+
+      // Fallback: notifica e fecha
       setTimeout(() => {
         if (window.opener && !window.opener.closed) {
           window.opener.postMessage({ type: 'AUTH_SUCCESS', userId: data.userId }, '*');
