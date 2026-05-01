@@ -10,7 +10,7 @@ using json = nlohmann::json;
 // Removido 'using namespace qrcodegen' para evitar conflitos no IDE
 
 // Configuração do Portal (Altere para seu IP local ou domínio de produção)
-const std::string BASE_URL = "http://192.168.0.15:3000";
+const std::string BASE_URL = "https://nx-cloud.mateusmarquesds.com";
 const std::string APP_VERSION = "1.0.1";
 const std::string APP_PATH = "/switch/AppSwitch.nro";
 
@@ -62,6 +62,10 @@ std::string createSession(const std::string& deviceToken) {
         struct curl_slist* headers = curl_slist_append(NULL, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         
+        // Desativa verificação SSL para funcionar no Switch
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        
         // Callback
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
@@ -90,6 +94,10 @@ std::string checkAppVersion() {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
         
+        // Desativa verificação SSL
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        
         CURLcode res = curl_easy_perform(curl);
         if(res != CURLE_OK) {
             printf("Erro ao verificar versão: %s\n", curl_easy_strerror(res));
@@ -115,6 +123,10 @@ bool downloadUpdate(const std::string& url, const std::string& outputPath) {
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
     
+    // Desativa verificação SSL
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    
     CURLcode res = curl_easy_perform(curl);
     
     fclose(fp);
@@ -134,6 +146,10 @@ std::string checkSessionStatus(const std::string& deviceToken) {
         
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        
+        // Desativa verificação SSL
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
         
         CURLcode res = curl_easy_perform(curl);
         if(res != CURLE_OK) {
