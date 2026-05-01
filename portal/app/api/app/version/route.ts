@@ -1,12 +1,12 @@
 export const runtime = 'nodejs';
 
 const APP_VERSION = {
-  version: '1.0.1',
+  version: '4',
   minVersion: '1.0.0',
-  downloadUrl: 'https://nx-cloud.mateusmarquesds.com/api/app/download',
-  changelog: 'Lançamento oficial em produção!',
+  downloadUrl: 'https://github.com/Mateusds/nx-cloud/releases/download/v4/AppSwitch.nro',
+  changelog: 'teste',
   forceUpdate: false,
-  releasedAt: '2026-04-30',
+  releasedAt: '2026-05-01',
 };
 
 export async function GET() {
