@@ -17,14 +17,14 @@ export async function POST(request: Request) {
 
     if (deviceToken && deviceToken !== 'unknown-device') {
       // Verifica se já existe uma sessão conectada para este dispositivo
-      const existing = await prisma.session.findUnique({
+      const existing: any = await prisma.session.findUnique({
         where: { deviceToken },
         include: { user: true }
       });
 
       if (existing && existing.status === 'CONNECTED' && existing.userId) {
         // Já está conectado, mantém a sessão atual e apenas atualiza os dados de storage
-        session = await prisma.session.update({
+        session = await (prisma.session as any).update({
           where: { deviceToken },
           data: {
             deviceName: body.deviceName,
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         });
       } else {
         // Para consoles reais: cria ou reseta a sessão existente
-        session = await prisma.session.upsert({
+        session = await (prisma.session as any).upsert({
           where: { deviceToken },
           update: {
             status: 'PENDING',

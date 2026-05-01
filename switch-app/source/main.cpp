@@ -60,15 +60,18 @@ void handleInput() {
     if (ctx.state == STATE_LIBRARY || ctx.state == STATE_DRIVE) {
         if (kDown & HidNpadButton_R) {
             ctx.state = STATE_DRIVE;
-            if (ctx.driveFiles.empty() && !ctx.userId.empty()) {
+            if (ctx.userId.empty()) {
+                ctx.statusMessage = "Google Drive requer login no portal web.";
+                ctx.statusTimeout = svcGetSystemTick() + 57600000ULL;
+            } else if (ctx.driveFiles.empty()) {
                 ctx.statusMessage = "Carregando Google Drive...";
                 ctx.driveFiles = Network::listDriveFiles(ctx.userId);
                 if (ctx.driveFiles.empty()) {
-                    ctx.statusMessage = "Nenhum arquivo encontrado ou erro no Drive.";
+                    ctx.statusMessage = "Nenhum arquivo encontrado.";
                 } else {
-                    ctx.statusMessage = "Arquivos carregados com sucesso!";
+                    ctx.statusMessage = "Arquivos carregados!";
                 }
-                ctx.statusTimeout = svcGetSystemTick() + 57600000ULL; // 3 segundos
+                ctx.statusTimeout = svcGetSystemTick() + 57600000ULL;
             }
         }
         if (kDown & HidNpadButton_L) ctx.state = STATE_LIBRARY;

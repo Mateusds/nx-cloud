@@ -13,17 +13,12 @@ export async function GET(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
+      include: {
         sessions: {
           orderBy: {
             createdAt: 'desc'
           },
-          take: 1
+          take: 10
         }
       },
     });
@@ -32,7 +27,21 @@ export async function GET(request: Request) {
       return Response.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
 
-    return Response.json({ user });
+    // Filtra sessões conectadas com dados do dispositivo
+    const sessions = (user.sessions as any[]).filter(
+      (s) => s.status === 'CONNECTED' && s.deviceName
+    );
+
+    return Response.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        createdAt: user.createdAt,
+        sessions,
+      }
+    });
   } catch (error) {
     console.error('Auth me error:', error);
     return Response.json({ error: 'Erro ao buscar usuário' }, { status: 500 });

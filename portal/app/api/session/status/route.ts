@@ -12,7 +12,7 @@ export async function GET(request: Request) {
       return Response.json({ error: 'deviceToken ou sessionId ausente' }, { status: 400 });
     }
 
-    let session;
+    let session: any;
     if (deviceToken) {
       session = await prisma.session.findUnique({
         where: { deviceToken },
@@ -32,6 +32,7 @@ export async function GET(request: Request) {
     return Response.json({
       status: session.status,
       userId: session.userId,
+      userName: session.user?.name || null,
       deviceName: session.deviceName,
       sdTotal: session.sdTotal,
       sdFree: session.sdFree,
