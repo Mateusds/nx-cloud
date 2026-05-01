@@ -1,10 +1,10 @@
 export const runtime = 'nodejs';
 
 const APP_VERSION = {
-  version: '10',
+  version: '11',
   minVersion: '1.0.0',
-  downloadUrl: 'https://github.com/Mateusds/nx-cloud/releases/download/v10/AppSwitch.nro',
-  changelog: 'fix: texto legível, botões corrigidos e acesso ao Google Drive restaurado',
+  downloadUrl: 'https://github.com/Mateusds/nx-cloud/releases/download/v11/AppSwitch.nro',
+  changelog: 'v11',
   forceUpdate: false,
   releasedAt: '2026-05-01',
 };
