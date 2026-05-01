@@ -59,15 +59,11 @@ PadState pad;
 //  INPUT HANDLER
 // ═══════════════════════════════════════════════════════════════════
 
-void handleInput() {
-    padUpdate(&pad);
-    u64 kDown = padGetButtonsDown(&pad);
-
+void handleInputCustom(u64 kDown) {
     // (+) sempre vai para tela de atualizacoes
     if (kDown & HidNpadButton_Plus) {
-        if (ctx.state != STATE_UPDATE && ctx.state != STATE_LOGIN) {
+        if (ctx.state != STATE_UPDATE) {
             ctx.state = STATE_UPDATE;
-            // Recarrega versao do GitHub
             ctx.newVersion = Network::checkUpdate();
             return;
         }
@@ -435,24 +431,36 @@ int main(int argc, char* argv[]) {
     u64 lastPoll = 0;
     bool running = true;
     while (appletMainLoop() && running) {
-        handleInput();
+        // 1. Atualiza controles uma única vez por frame
+        padUpdate(&pad);
+        u64 kDown = padGetButtonsDown(&pad);
 
-        // Polling de login
-        if (ctx.state == STATE_LOGIN && (svcGetSystemTick() - lastPoll) > 38400000ULL) {
+        // 2. Atalhos globais rápidos
+        if (kDown & HidNpadButton_Plus) {
+            if (ctx.state != STATE_UPDATE) {
+                ctx.state = STATE_UPDATE;
+                ctx.newVersion = Network::checkUpdate();
+            }
+        }
+        if (kDown & HidNpadButton_Minus) running = false;
+
+        // 3. Processa entrada do estado atual (sem padUpdate interno)
+        handleInputCustom(kDown);
+
+        // 4. Polling de login (apenas se estiver em repouso na tela de login)
+        u64 currentTick = svcGetSystemTick();
+        if (ctx.state == STATE_LOGIN && (currentTick - lastPoll) > 38400000ULL) { // ~2 segundos
             SessionResponse sr = Network::checkStatus(ctx.deviceToken);
             if (sr.status == "CONNECTED") {
                 ctx.state = STATE_LIBRARY;
                 ctx.userName = sr.userName;
                 ctx.userId = sr.userId;
             }
-            lastPoll = svcGetSystemTick();
+            lastPoll = currentTick;
         }
 
+        // 5. Desenha a tela
         renderUI();
-
-        // Minus (-) para sair do app
-        padUpdate(&pad);
-        if (padGetButtonsDown(&pad) & HidNpadButton_Minus) running = false;
     }
 
     Discovery::cleanup(ctx.games);
