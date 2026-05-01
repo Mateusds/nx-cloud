@@ -9,7 +9,7 @@
 #include "discovery.hpp"
 #include "network.hpp"
 
-const std::string APP_VERSION = "v1.0.1";
+const std::string APP_VERSION = "v7";
 const std::string UPDATE_SOURCE = "GitHub (Mateusds/nx-cloud)";
 
 std::string formatBytes(s64 bytes) {
@@ -141,8 +141,10 @@ void renderUI() {
     Graphics::drawText("(+) SAIR   (L/R) ALTERAR ABA   (DPAD) NAVEGAR", 50, 690, 16, {150, 150, 150, 255});
 
     // Informações de versão
-    Graphics::drawText(APP_VERSION, 1150, 680, 16, {100, 100, 100, 255});
-    Graphics::drawText(UPDATE_SOURCE, 950, 698, 14, {80, 80, 80, 255});
+    Graphics::drawText("Versão Atual: " + APP_VERSION, 1050, 675, 14, {120, 120, 120, 255});
+    if (!ctx.newVersion.empty()) {
+        Graphics::drawText("Última Release: " + ctx.newVersion, 1050, 692, 14, {150, 150, 150, 255});
+    }
 
     Graphics::present();
 }
