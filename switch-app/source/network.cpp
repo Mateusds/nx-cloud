@@ -64,8 +64,11 @@ SessionResponse Network::checkStatus(const std::string& deviceToken) {
             try {
                 auto data = json::parse(response);
                 res.status = data["status"];
-                if (data.contains("user") && !data["user"].is_null()) {
-                    res.userName = data["user"]["name"];
+                if (data.contains("userName") && !data["userName"].is_null()) {
+                    res.userName = data["userName"];
+                }
+                if (data.contains("userId") && !data["userId"].is_null()) {
+                    res.userId = data["userId"];
                 }
             } catch(...) {}
         }

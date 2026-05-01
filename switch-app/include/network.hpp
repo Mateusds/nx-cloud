@@ -10,6 +10,7 @@ struct SessionResponse {
     std::string authUrl;
     std::string status;
     std::string userName;
+    std::string userId;
 };
 
 struct DriveFile {

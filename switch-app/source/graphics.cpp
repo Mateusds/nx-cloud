@@ -107,7 +107,7 @@ void Graphics::drawText(const std::string& text, int x, int y, int size, SDL_Col
         for (int iy = 0; iy < 8; iy++) {
             unsigned char line = font8x8[charIdx][iy];
             for (int ix = 0; ix < 8; ix++) {
-                if (line & (1 << ix)) {
+                if (line & (1 << (7 - ix))) {
                     SDL_Rect r = {
                         (int)(currentX + (ix * scale)),
                         (int)(y + (iy * scale)),

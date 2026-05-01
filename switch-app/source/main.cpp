@@ -54,7 +54,12 @@ void handleInput() {
     u64 kDown = padGetButtonsDown(&pad);
 
     if (ctx.state == STATE_LIBRARY || ctx.state == STATE_DRIVE) {
-        if (kDown & HidNpadButton_R) ctx.state = STATE_DRIVE;
+        if (kDown & HidNpadButton_R) {
+            ctx.state = STATE_DRIVE;
+            if (ctx.driveFiles.empty() && !ctx.userId.empty()) {
+                ctx.driveFiles = Network::listDriveFiles(ctx.userId);
+            }
+        }
         if (kDown & HidNpadButton_L) ctx.state = STATE_LIBRARY;
     }
 
@@ -71,6 +76,20 @@ void handleInput() {
         if (kDown & HidNpadButton_Up) ctx.selectedFile--;
         if (ctx.selectedFile < 0) ctx.selectedFile = 0;
         if (ctx.selectedFile >= (int)ctx.driveFiles.size()) ctx.selectedFile = ctx.driveFiles.size() - 1;
+    }
+
+    // Ações de Botões (A, Y, B)
+    if (kDown & HidNpadButton_A) {
+        if (ctx.state == STATE_LIBRARY && !ctx.games.empty()) {
+            // Backup logic would go here
+        } else if (ctx.state == STATE_DRIVE && !ctx.driveFiles.empty()) {
+            // Install logic would go here
+        }
+    }
+
+    if (kDown & HidNpadButton_B) {
+        // No lugar de fechar o app com B, vamos apenas ignorar ou voltar estados
+        // se necessário. O Plus (+) continua sendo o botão de sair.
     }
 }
 
@@ -212,6 +231,7 @@ int main(int argc, char* argv[]) {
     if (statusRes.status == "CONNECTED") {
         ctx.state = STATE_LIBRARY;
         ctx.userName = statusRes.userName;
+        ctx.userId = statusRes.userId;
     } else {
         SessionResponse res = Network::initSession(deviceInfo);
         ctx.authUrl = res.authUrl;
@@ -225,6 +245,7 @@ int main(int argc, char* argv[]) {
             if (statusRes.status == "CONNECTED") {
                 ctx.state = STATE_LIBRARY;
                 ctx.userName = statusRes.userName;
+                ctx.userId = statusRes.userId;
             }
             lastPoll = svcGetSystemTick();
         }
