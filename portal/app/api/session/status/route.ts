@@ -18,7 +18,7 @@ export async function GET(request: Request) {
         where: { deviceToken },
         include: { user: true },
       });
-    } else {
+    } else if (sessionId) {
       session = await prisma.session.findUnique({
         where: { id: sessionId },
         include: { user: true },
