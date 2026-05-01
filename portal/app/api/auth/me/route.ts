@@ -18,7 +18,7 @@ export async function GET(request: Request) {
           orderBy: {
             createdAt: 'desc'
           },
-          take: 10
+          take: 20 // Aumentamos para 20 para garantir que pegamos a sessão certa
         }
       },
     });
@@ -27,10 +27,16 @@ export async function GET(request: Request) {
       return Response.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
 
-    // Filtra sessões conectadas com dados do dispositivo
-    const sessions = (user.sessions as any[]).filter(
-      (s) => s.status === 'CONNECTED' && s.deviceName
-    );
+    // Filtra e ordena: sessões CONNECTED com deviceName primeiro
+    const sessions = (user.sessions as any[])
+      .filter((s) => s.status === 'CONNECTED')
+      .sort((a, b) => {
+        // Se um tem deviceName e o outro não, o que tem vem primeiro
+        if (a.deviceName && !b.deviceName) return -1;
+        if (!a.deviceName && b.deviceName) return 1;
+        // Se ambos têm ou não, ordena por data
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
 
     return Response.json({
       user: {
