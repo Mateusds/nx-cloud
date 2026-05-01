@@ -15,11 +15,24 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            # Navega até o diretório do portal nx-cloud
             cd ~/nx-cloud/portal
+            
+            # Atualiza o código para a versão mais recente da main
             git fetch origin main
             git reset --hard origin/main
+            
+            # Instala dependências e gera o cliente do Prisma
             npm install
             npx prisma generate
+            
+            # Executa o build de produção
             npm run build
-            # Reinicia o processo (Se estiver usando PM2)
-            pm2 restart nx-cloud || npm run dev & 
+            
+            # Gerenciamento do PM2:
+            # 1. Tenta deletar o processo antigo para liberar a porta 3000
+            # 2. Inicia o servidor em modo produção usando 'npm start'
+            # 3. Salva a lista de processos para persistência no reboot da EC2
+            pm2 delete nx-cloud || true
+            pm2 start npm --name "nx-cloud" -- start
+            pm2 save
