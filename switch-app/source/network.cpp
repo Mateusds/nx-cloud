@@ -127,3 +127,27 @@ std::vector<DriveFile> Network::listDriveFiles(const std::string& userId, const 
     }
     return files;
 }
+
+std::string Network::checkUpdate() {
+    CURL* curl = curl_easy_init();
+    std::string response;
+    if(curl) {
+        std::string url = "https://api.github.com/repos/Mateusds/nx-cloud/releases/latest";
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "NX-Cloud-App");
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        if(curl_easy_perform(curl) == CURLE_OK) {
+            try {
+                auto data = json::parse(response);
+                if (data.contains("tag_name")) {
+                    return data["tag_name"];
+                }
+            } catch(...) {}
+        }
+        curl_easy_cleanup(curl);
+    }
+    return "";
+}

@@ -9,6 +9,9 @@
 #include "discovery.hpp"
 #include "network.hpp"
 
+const std::string APP_VERSION = "v1.0.1";
+const std::string UPDATE_SOURCE = "GitHub (Mateusds/nx-cloud)";
+
 std::string formatBytes(s64 bytes) {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(2);
@@ -41,6 +44,7 @@ struct GlobalContext {
     std::vector<DriveFile> driveFiles;
     int selectedGame = 0;
     int selectedFile = 0;
+    std::string newVersion;
 } ctx;
 
 PadState pad;
@@ -101,11 +105,6 @@ void renderUI() {
             if (ctx.games[i].icon) Graphics::drawImage(ctx.games[i].icon, x, y, 150, 150);
             else Graphics::drawRect(x, y, 150, 150, {50, 50, 60, 255});
         }
-        if (!ctx.games.empty()) {
-            Graphics::drawRect(0, 640, 1280, 80, {25, 25, 35, 255});
-            Graphics::drawText("Jogo: " + ctx.games[ctx.selectedGame].name, 50, 665, 22, {255, 255, 255, 255});
-            Graphics::drawText("(A) BACKUP    (Y) RESTAURAR", 850, 665, 22, {0, 255, 150, 255});
-        }
     }
     else if (ctx.state == STATE_DRIVE) {
         Graphics::drawText("Navegador Google Drive:", 50, 80, 22, {255, 255, 255, 255});
@@ -121,9 +120,29 @@ void renderUI() {
             
             Graphics::drawText(info, 60, y, 18, {220, 220, 220, 255});
         }
-        Graphics::drawRect(0, 640, 1280, 80, {25, 25, 35, 255});
-        Graphics::drawText("(A) INSTALAR JOGO NO SWITCH", 850, 665, 22, {0, 255, 150, 255});
     }
+
+    // Notificação de Atualização
+    if (!ctx.newVersion.empty() && ctx.newVersion != APP_VERSION) {
+        Graphics::drawRect(340, 20, 600, 40, {255, 50, 50, 255});
+        Graphics::drawText("NOVA ATUALIZAÇÃO DISPONÍVEL: " + ctx.newVersion, 360, 30, 20, {255, 255, 255, 255});
+    }
+
+    // Rodapé com guia de botões
+    Graphics::drawRect(0, 640, 1280, 80, {25, 25, 35, 255});
+    if (ctx.state == STATE_LIBRARY && !ctx.games.empty()) {
+        Graphics::drawText("Jogo: " + ctx.games[ctx.selectedGame].name, 50, 655, 20, {255, 255, 255, 255});
+        Graphics::drawText("(A) BACKUP    (Y) RESTAURAR", 850, 655, 20, {0, 255, 150, 255});
+    } else if (ctx.state == STATE_DRIVE) {
+        Graphics::drawText("(A) INSTALAR JOGO NO SWITCH", 850, 655, 20, {0, 255, 150, 255});
+    }
+
+    // Atalhos globais
+    Graphics::drawText("(+) SAIR   (L/R) ALTERAR ABA   (DPAD) NAVEGAR", 50, 690, 16, {150, 150, 150, 255});
+
+    // Informações de versão
+    Graphics::drawText(APP_VERSION, 1150, 680, 16, {100, 100, 100, 255});
+    Graphics::drawText(UPDATE_SOURCE, 950, 698, 14, {80, 80, 80, 255});
 
     Graphics::present();
 }
@@ -179,16 +198,27 @@ int main(int argc, char* argv[]) {
         fsFsClose(&fs);
     }
 
-    SessionResponse res = Network::initSession(deviceInfo);
-    ctx.authUrl = res.authUrl;
     if (nsReady) {
         ctx.games = Discovery::listGames();
+    }
+
+    // Verifica atualizações no GitHub
+    ctx.newVersion = Network::checkUpdate();
+
+    // Tenta reconectar automaticamente se já estiver vinculado
+    SessionResponse statusRes = Network::checkStatus(ctx.deviceToken);
+    if (statusRes.status == "CONNECTED") {
+        ctx.state = STATE_LIBRARY;
+        ctx.userName = statusRes.userName;
+    } else {
+        SessionResponse res = Network::initSession(deviceInfo);
+        ctx.authUrl = res.authUrl;
     }
 
     u64 lastPoll = 0;
     while (appletMainLoop()) {
         handleInput();
-        if (ctx.state == STATE_LOGIN && (svcGetSystemTick() - lastPoll) > 2000000000ULL) {
+        if (ctx.state == STATE_LOGIN && (svcGetSystemTick() - lastPoll) > 38400000ULL) { // 2 segundos (19.2MHz * 2)
             SessionResponse statusRes = Network::checkStatus(ctx.deviceToken);
             if (statusRes.status == "CONNECTED") {
                 ctx.state = STATE_LIBRARY;
