@@ -20,7 +20,7 @@ BUILD  := build
 # Configurações do Aplicativo (Aparecem no Homebrew Menu)
 APP_TITLE   := NX-Cloud
 APP_AUTHOR  := Mateusds
-APP_VERSION := v8
+APP_VERSION := v14
 ICON        := icon.jpg
 
 # Flags de Compilação

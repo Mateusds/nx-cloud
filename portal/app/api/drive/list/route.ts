@@ -15,8 +15,10 @@ export async function GET(request: Request) {
       where: { id: userId },
     });
 
-    if (!user || !user.googleRefresh) {
-      return Response.json({ error: 'Google Drive não conectado' }, { status: 401 });
+    if (!user || !user.googleRefresh || /^\d+$/.test(user.googleRefresh)) {
+      return Response.json({ 
+        error: 'Google Drive não autorizado ou token expirado. Por favor, conecte novamente no portal.' 
+      }, { status: 401 });
     }
 
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
